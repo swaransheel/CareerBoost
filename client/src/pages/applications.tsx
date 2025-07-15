@@ -1,8 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Calendar, MapPin, Building, Mail, Phone, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 import type { Application, Job } from "@shared/schema";
 
 interface ApplicationWithJob extends Application {
@@ -10,9 +11,44 @@ interface ApplicationWithJob extends Application {
 }
 
 export default function Applications() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
   const { data: applications, isLoading, error } = useQuery<ApplicationWithJob[]>({
     queryKey: ["/api/applications"],
   });
+
+  const withdrawMutation = useMutation({
+    mutationFn: async (applicationId: number) => {
+      const response = await fetch(`/api/applications/${applicationId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to withdraw application');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
+      toast({
+        title: "Application withdrawn",
+        description: "Your application has been successfully withdrawn.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to withdraw application. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleWithdraw = async (applicationId: number) => {
+    if (confirm("Are you sure you want to withdraw this application?")) {
+      await withdrawMutation.mutate(applicationId);
+    }
+  };
 
   const formatDate = (date: Date | string | null) => {
     if (!date) return "N/A";
@@ -24,6 +60,19 @@ export default function Applications() {
       month: "short",
       day: "numeric",
     });
+  };
+
+  const getStatusBadgeClass = (status: string | null) => {
+    switch (status) {
+      case 'shortlisted':
+        return 'bg-emerald-100 text-emerald-700';
+      case 'rejected':
+        return 'bg-red-100 text-red-700';
+      case 'reviewed':
+        return 'bg-blue-100 text-blue-700';
+      default:
+        return 'bg-amber-100 text-amber-700';
+    }
   };
 
   if (error) {
@@ -102,8 +151,8 @@ export default function Applications() {
                     <span>{application.job?.location || "Location Not Available"}</span>
                   </div>
                 </div>
-                <Badge className="bg-blue-100 text-blue-700">
-                  Under Review
+                <Badge className={getStatusBadgeClass(application.status)}>
+                  {application.status ? application.status.charAt(0).toUpperCase() + application.status.slice(1) : 'Pending'}
                 </Badge>
               </div>
 
@@ -152,10 +201,20 @@ export default function Applications() {
                   </span>
                 </div>
                 <div className="flex space-x-2">
-                  <Button variant="outline" size="sm">
-                    Withdraw
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleWithdraw(application.id)}
+                    disabled={withdrawMutation.isPending}
+                  >
+                    {withdrawMutation.isPending ? "Withdrawing..." : "Withdraw"}
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled
+                    title="Edit functionality coming soon"
+                  >
                     Edit Application
                   </Button>
                 </div>

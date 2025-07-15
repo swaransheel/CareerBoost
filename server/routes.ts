@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertJobSchema, insertApplicationSchema } from "@shared/schema";
 import { z } from "zod";
+import type { ApplicationStatus } from "./storage";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/jobs - Get all jobs
@@ -65,6 +66,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(applications);
     } catch (error) {
       console.error("Error fetching applications:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // GET /api/admin/applications - Get all applications with job details (admin only)
+  app.get("/api/admin/applications", async (req, res) => {
+    try {
+      const applications = await storage.getAllApplications();
+      res.json(applications);
+    } catch (error) {
+      console.error("Error fetching applications:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // DELETE /api/applications/:id - Withdraw application
+  app.delete("/api/applications/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid application ID" });
+      }
+
+      const application = await storage.getApplicationById(id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      const success = await storage.withdrawApplication(id);
+      if (success) {
+        res.status(200).json({ message: "Application withdrawn successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to withdraw application" });
+      }
+    } catch (error) {
+      console.error("Error withdrawing application:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // PATCH /api/applications/:id/status - Update application status
+  app.patch("/api/applications/:id/status", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid application ID" });
+      }
+
+      const status = req.body.status;
+      if (!["pending", "reviewed", "shortlisted", "rejected"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+
+      const application = await storage.getApplicationById(id);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      const success = await storage.updateApplicationStatus(id, status as ApplicationStatus);
+      if (success) {
+        res.json({ message: "Application status updated successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to update application status" });
+      }
+    } catch (error) {
+      console.error("Error updating application status:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
