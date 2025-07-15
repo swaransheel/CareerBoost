@@ -26,7 +26,7 @@ A modern job application platform built with React, Express.js, and PostgreSQL. 
 
 1. Clone the repository:
    ```bash
-   git clone [your-repo-url]
+   git clone https://github.com/swaransheel/CareerBoost.git
    cd CareerBoostPlatform
    ```
 
