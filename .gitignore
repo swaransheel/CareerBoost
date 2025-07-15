@@ -12,3 +12,4 @@ vite.config.ts.*
 .env.development
 .env.test
 .env.production
+.vercel
