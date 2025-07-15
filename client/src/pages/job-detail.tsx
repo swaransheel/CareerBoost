@@ -46,10 +46,13 @@ export default function JobDetail() {
     }
   };
 
-  const formatDate = (date: Date | null) => {
+  const formatDate = (date: Date | string | null) => {
     if (!date) return "Recently";
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) return "Recently";
+    
     const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffTime = Math.abs(now.getTime() - dateObj.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     if (diffDays === 1) return "Posted 1 day ago";

@@ -14,9 +14,12 @@ export default function Applications() {
     queryKey: ["/api/applications"],
   });
 
-  const formatDate = (date: Date | null) => {
+  const formatDate = (date: Date | string | null) => {
     if (!date) return "N/A";
-    return new Date(date).toLocaleDateString("en-US", {
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) return "N/A";
+    
+    return dateObj.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
