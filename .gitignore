@@ -3,7 +3,7 @@ dist
 .DS_Store
 server/public
 vite.config.ts.*
-<<<<<<< HEAD
+
 *.tar.gz
 .env
 .env.local
@@ -11,6 +11,4 @@ vite.config.ts.*
 .env.development
 .env.test
 .env.production
-=======
-*.tar.gz
->>>>>>> parent of 33833af (Updated .env)
+
